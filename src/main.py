@@ -12,5 +12,5 @@ Edit `/src` and `/tests` to customize this app to your heart's desire :heart:.
 st.page_link(
     "pages/11_clip_single_screen.py",
     label="Go to Clip Single Screenshot App",
-    icon="📸"
+    icon="📸",
 )

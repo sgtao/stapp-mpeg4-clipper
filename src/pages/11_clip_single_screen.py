@@ -5,6 +5,8 @@ import tempfile
 import streamlit as st
 from moviepy import VideoFileClip
 
+from functions.VideoClipper import VideoClipper
+
 APP_TITLE = "Clip Single Screenshot App."
 
 
@@ -15,6 +17,9 @@ def initialize_session_state():
         st.session_state.video_bytes = None
     if "tmp_path" not in st.session_state:
         st.session_state.tmp_path = None
+    if "clipper" not in st.session_state:
+        st.session_state.clipper = None
+
 
 def cleanup_tempfile():
     """アップロード解除時に一時ファイルを削除"""
@@ -46,10 +51,18 @@ def main():
         # early return
         return
 
-    if st.session_state.mpeg_filename == "":
+    # キャッシュ or 新規読み込み
+    clipper = st.session_state.clipper
+    if uploaded_file.name != st.session_state.mpeg_filename:
+        
+        clipper = VideoClipper(uploaded_file)
+        clipper.load()
+
+        # 新しいファイル → 一時ファイル作成
         st.session_state.mpeg_filename = uploaded_file.name
-    if st.session_state.video_bytes is None:
-        st.session_state.video_bytes = uploaded_file.read()
+        # st.info(f"💾 新しい一時ファイルを作成しました: {tmp.name}")
+    else:
+        st.info("キャッシュされた動画を再利用します。")
 
     with st.expander(
         label=f"File: {st.session_state.mpeg_filename}",
@@ -57,34 +70,18 @@ def main():
     ):
         st.video(
             # data=uploaded_file,
-            data=uploaded_file,
+            data=clipper.get_tmp_path(),
         )
+        meta = clipper.get_metadata()
+        st.write(f"⏱ Duration: {meta['duration']:.2f}s")
+        st.write(f"🎞 FPS: {meta['fps']:.2f}")
+        st.write(f"📏 Size: {meta['size'][0]}x{meta['size'][1]}")
 
-    # キャッシュ or 新規読み込み
-    if uploaded_file.name != st.session_state.mpeg_filename:
-        # 新しいファイル → 一時ファイル作成
-        video_bytes = uploaded_file.read()
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        tmp.write(video_bytes)
-        tmp.close()
-        st.session_state.video_bytes = video_bytes
-        st.session_state.tmp_path = tmp.name
-        st.session_state.mpeg_filename = uploaded_file.name
-        st.info(f"💾 新しい一時ファイルを作成しました: {tmp.name}")
-    else:
-        st.info("キャッシュされた動画を再利用します。")
+    # Screenshot at 2 seconds
+    img_bytes = clipper.get_screenshot_bytes(t=2.0)
+    st.image(img_bytes, caption="📸 2秒目のスクリーンショット")
 
-    tmp_path = st.session_state.tmp_path
-
-    # 動画情報とスクリーンショット
-    with VideoFileClip(tmp_path) as clip:
-        st.code(f"動画の長さ: {clip.duration:.2f} 秒")
-        st.code(f"フレームレート: {clip.fps:.2f} fps")
-        st.code(f"サイズ: {clip.w}x{clip.h} ピクセル")
-
-        screenshot_path = os.path.join(os.path.dirname(tmp_path), "screenshot.png")
-        clip.save_frame(screenshot_path, t=2.0)
-        st.image(screenshot_path, caption="📸 2秒目のスクリーンショット")
+    clipper.cleanup()
 
 
 if __name__ == "__main__":
