@@ -140,6 +140,9 @@ task rm-dist
 
   Streamlitは、データアプリケーションを簡単に作成するためのオープンソースライブラリです。
 
+## 使用メディア
+このプロジェクトのサンプルデータとして、[GetSampleFiles.com](https://ja.getsamplefiles.com/)の動画を使用してます。
+- sample-5.mp4 使用（`medias/sample-320p.mp`に格納）
 
 ## ライセンス
 MIT License
