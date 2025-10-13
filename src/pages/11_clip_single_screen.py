@@ -1,43 +1,41 @@
 # 11_clip_single_screen.py
-import os
-import tempfile
+import hashlib
 
 import streamlit as st
-from moviepy import VideoFileClip
 
 from functions.VideoClipper import VideoClipper
 
 APP_TITLE = "Clip Single Screenshot App."
 
 
+def file_hash(file_obj):
+    """アップロードファイルのハッシュを生成（キャッシュ判定用）"""
+    file_obj.seek(0)
+    file_bytes = file_obj.read()
+    file_obj.seek(0)
+    return hashlib.md5(file_bytes).hexdigest()
+
+
 def initialize_session_state():
-    if "mpeg_filename" not in st.session_state:
-        st.session_state.mpeg_filename = ""
-    if "video_bytes" not in st.session_state:
-        st.session_state.video_bytes = None
-    if "tmp_path" not in st.session_state:
-        st.session_state.tmp_path = None
-    if "clipper" not in st.session_state:
-        st.session_state.clipper = None
+    for key in ["mpeg_hash", "clipper"]:
+        if key not in st.session_state:
+            st.session_state[key] = None
 
 
-def cleanup_tempfile():
+def cleanup_clipper():
     """アップロード解除時に一時ファイルを削除"""
-    tmp_path = st.session_state.get("tmp_path")
-    if tmp_path and os.path.exists(tmp_path):
-        os.remove(tmp_path)
-        st.info(f"🧹 一時ファイルを削除しました: {tmp_path}")
-    st.session_state.video_bytes = None
-    st.session_state.tmp_path = None
-    st.session_state.mpeg_filename = None
+    clipper = st.session_state.get("clipper")
+    if clipper:
+        clipper.cleanup()
+        st.session_state.clipper = None
+        st.session_state.mpeg_hash = None
+        st.toast("🧹 一時ファイルを削除しました。")
 
 
 def main():
     st.page_link("main.py", label="Back to Home", icon="🏠")
-
     st.subheader(f"📸 {APP_TITLE}")
 
-    # upload mpeg-4 file
     uploaded_file = st.file_uploader(
         label="Upload mpeg-4 data",
         accept_multiple_files=False,
@@ -45,43 +43,34 @@ def main():
     )
 
     if uploaded_file is None:
-        # ファイル削除を検知
-        if st.session_state.mpeg_filename is not None:
-            cleanup_tempfile()
-        # early return
+        # ファイル削除検知
+        if st.session_state.mpeg_hash is not None:
+            cleanup_clipper()
         return
 
-    # キャッシュ or 新規読み込み
-    clipper = st.session_state.clipper
-    if uploaded_file.name != st.session_state.mpeg_filename:
-        
+    # ハッシュ比較で再アップロード判定
+    current_hash = file_hash(uploaded_file)
+    if st.session_state.mpeg_hash != current_hash:
+        cleanup_clipper()  # 古いデータ削除
         clipper = VideoClipper(uploaded_file)
         clipper.load()
-
-        # 新しいファイル → 一時ファイル作成
-        st.session_state.mpeg_filename = uploaded_file.name
-        # st.info(f"💾 新しい一時ファイルを作成しました: {tmp.name}")
+        st.session_state.mpeg_hash = current_hash
+        st.session_state.clipper = clipper
     else:
+        clipper = st.session_state.clipper
         st.info("キャッシュされた動画を再利用します。")
 
-    with st.expander(
-        label=f"File: {st.session_state.mpeg_filename}",
-        expanded=False,
-    ):
-        st.video(
-            # data=uploaded_file,
-            data=clipper.get_tmp_path(),
-        )
+    # 動画再生 & メタ情報表示
+    with st.expander(f"File: {uploaded_file.name}", expanded=False):
+        st.video(clipper.get_video_bytes())
         meta = clipper.get_metadata()
         st.write(f"⏱ Duration: {meta['duration']:.2f}s")
         st.write(f"🎞 FPS: {meta['fps']:.2f}")
         st.write(f"📏 Size: {meta['size'][0]}x{meta['size'][1]}")
 
-    # Screenshot at 2 seconds
+    # Screenshot
     img_bytes = clipper.get_screenshot_bytes(t=2.0)
     st.image(img_bytes, caption="📸 2秒目のスクリーンショット")
-
-    clipper.cleanup()
 
 
 if __name__ == "__main__":

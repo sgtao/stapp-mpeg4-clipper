@@ -2,7 +2,6 @@
 import os
 import tempfile
 from io import BytesIO
-
 from moviepy import VideoFileClip
 from PIL import Image
 
@@ -29,9 +28,6 @@ class VideoClipper:
 
         self.clip = VideoFileClip(self.tmp_path)
 
-    def get_tmp_path(self):
-        return self.tmp_path
-
     def get_metadata(self):
         """動画の基本情報を辞書で返す"""
         if not self.clip:
@@ -43,14 +39,20 @@ class VideoClipper:
             "size": (self.clip.w, self.clip.h),
         }
 
-    def get_screenshot_bytes(self, t: float = 2.0) -> BytesIO:
+    def get_video_bytes(self) -> bytes:
+        """一時ファイルの動画データをバイト列として返す"""
+        if not self.tmp_path:
+            raise RuntimeError("Temporary video not available.")
+        with open(self.tmp_path, "rb") as f:
+            return f.read()
+
+    def get_screenshot_bytes(self, t: float = 1.0) -> BytesIO:
         """指定時刻tのフレームをPIL画像として取得し、BytesIOに変換して返す"""
         if not self.clip:
             raise RuntimeError("Clip not loaded. Call load() first.")
 
         frame = self.clip.get_frame(t)
         image = Image.fromarray(frame)
-
         img_bytes = BytesIO()
         image.save(img_bytes, format="PNG")
         img_bytes.seek(0)
