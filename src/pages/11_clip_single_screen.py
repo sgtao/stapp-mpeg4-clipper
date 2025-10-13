@@ -23,7 +23,7 @@ def initialize_session_state():
         st.session_state.clipper_control = None
 
 
-def cleanup_clipper(clipper_control: ClipperControl):
+def cleanup_clipper():
     """アップロード解除時に一時ファイルを削除"""
     clipper_control = st.session_state.get("clipper_control")
     if clipper_control:
@@ -45,13 +45,13 @@ def main():
     if uploaded_file is None:
         # ファイル削除検知
         if st.session_state.mpeg_hash is not None:
-            cleanup_clipper(st.session_state.clipper_control)
+            cleanup_clipper()
         return
 
     # ハッシュ比較で再アップロード判定
     current_hash = file_hash(uploaded_file)
     if st.session_state.mpeg_hash != current_hash:
-        cleanup_clipper(st.session_state.clipper_control)  # 古いデータ削除
+        cleanup_clipper()
         st.session_state.clipper_control = ClipperControl(uploaded_file)
         st.session_state.mpeg_hash = current_hash
         st.info("Loaded Video data into cache.")

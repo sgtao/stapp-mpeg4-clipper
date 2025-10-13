@@ -34,9 +34,14 @@ class ClipperControl:
         )
 
     def cleanup(self):
-        self.clipper.cleanup()
+        if self.clipper is not None:
+            try:
+                self.clipper.cleanup()
+            except Exception as e:
+                st.warning(f"⚠️ cleanup中にエラー: {e}")
+
         self.clipper = None
-        self.meta = {'duration':0, 'fps':0, 'size':[]}
+        self.meta = {"duration": 0, "fps": 0, "size": []}
 
     def reset_clipper(self, uploaded_file):
         self.cleanup()
