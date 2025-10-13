@@ -6,9 +6,10 @@ from functions.VideoClipper import VideoClipper
 
 class ClipperControl:
 
-    def __init__(self, clipper: VideoClipper):
-        self.clipper = clipper
-        self.meta = clipper.get_metadata()
+    def __init__(self, uploaded_file):
+        self.clipper = VideoClipper(uploaded_file)
+        self.clipper.load()
+        self.meta = self.clipper.get_metadata()
 
     def render_clipper_video(self):
         st.video(self.clipper.get_video_bytes())
@@ -31,3 +32,13 @@ class ClipperControl:
             img_bytes,
             caption=f"📸 Screenshot at {timestamp_screen} sec.",
         )
+
+    def cleanup(self):
+        self.clipper.cleanup()
+        self.clipper = None
+        self.meta = {'duration':0, 'fps':0, 'size':[]}
+
+    def reset_clipper(self, uploaded_file):
+        self.cleanup()
+        self.clipper = VideoClipper(uploaded_file)
+        self.meta = self.clipper.get_metadata()

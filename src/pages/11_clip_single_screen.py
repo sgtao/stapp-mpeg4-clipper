@@ -3,7 +3,6 @@ import hashlib
 
 import streamlit as st
 
-from functions.VideoClipper import VideoClipper
 from components.ClipperControl import ClipperControl
 
 APP_TITLE = "Clip Single Screenshot App."
@@ -20,16 +19,15 @@ def file_hash(file_obj):
 def initialize_session_state():
     if "mpeg_hash" not in st.session_state:
         st.session_state.mpeg_hash = None
-    if "clipper" not in st.session_state:
-        st.session_state.clipper = None
+    if "clipper_control" not in st.session_state:
+        st.session_state.clipper_control = None
 
 
-def cleanup_clipper():
+def cleanup_clipper(clipper_control: ClipperControl):
     """アップロード解除時に一時ファイルを削除"""
-    clipper = st.session_state.get("clipper")
-    if clipper:
-        clipper.cleanup()
-        st.session_state.clipper = None
+    clipper_control = st.session_state.get("clipper_control")
+    if clipper_control:
+        clipper_control.cleanup()
         st.session_state.mpeg_hash = None
         st.toast("🧹 一時ファイルを削除しました。")
 
@@ -47,24 +45,21 @@ def main():
     if uploaded_file is None:
         # ファイル削除検知
         if st.session_state.mpeg_hash is not None:
-            cleanup_clipper()
+            cleanup_clipper(st.session_state.clipper_control)
         return
 
     # ハッシュ比較で再アップロード判定
     current_hash = file_hash(uploaded_file)
     if st.session_state.mpeg_hash != current_hash:
-        cleanup_clipper()  # 古いデータ削除
-        clipper = VideoClipper(uploaded_file)
-        clipper.load()
+        cleanup_clipper(st.session_state.clipper_control)  # 古いデータ削除
+        st.session_state.clipper_control = ClipperControl(uploaded_file)
         st.session_state.mpeg_hash = current_hash
-        st.session_state.clipper = clipper
         st.info("Loaded Video data into cache.")
     else:
-        clipper = st.session_state.clipper
         st.info("Reload Video data from cache.")
 
     # 動画再生 & メタ情報表示
-    clipper_control = ClipperControl(clipper)
+    clipper_control = st.session_state.clipper_control
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
         clipper_control.render_clipper_video()
 
