@@ -14,3 +14,8 @@ st.page_link(
     label="Go to Clip Single Screenshot App",
     icon="📸",
 )
+st.page_link(
+    "pages/12_clip_multi_screenshots.py",
+    label="Go to Multi Screenshot Selector App",
+    icon="📹",
+)
