@@ -61,16 +61,27 @@ def main():
         st.info("キャッシュされた動画を再利用します。")
 
     # 動画再生 & メタ情報表示
+    meta = clipper.get_metadata()
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
         st.video(clipper.get_video_bytes())
-        meta = clipper.get_metadata()
         st.write(f"⏱ Duration: {meta['duration']:.2f}s")
         st.write(f"🎞 FPS: {meta['fps']:.2f}")
         st.write(f"📏 Size: {meta['size'][0]}x{meta['size'][1]}")
 
     # Screenshot
-    img_bytes = clipper.get_screenshot_bytes(t=2.0)
-    st.image(img_bytes, caption="📸 2秒目のスクリーンショット")
+    timestamp_screen = st.slider(
+        label="Screenshot time stamp(sec.)",
+        min_value=0,
+        max_value=int(meta['duration']),
+        value=1,
+        step=1,
+        format=f"%03d sec.",
+    )
+    img_bytes = clipper.get_screenshot_bytes(t=timestamp_screen)
+    st.image(
+        img_bytes,
+        caption=f"📸 Screenshot at {timestamp_screen} sec.",
+    )
 
 
 if __name__ == "__main__":
