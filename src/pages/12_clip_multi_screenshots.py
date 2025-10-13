@@ -59,6 +59,17 @@ class MultiScreenshot:
         # os.remove(tmp_path)
         return screenshots
 
+    def seconds_to_timecode(self, seconds: float) -> str:
+        """秒数を hh:mm:ss の形式に変換する"""
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+
+        if hours > 0:
+            return f"{hours:02}:{minutes:02}:{secs:02}"
+        else:
+            return f"{minutes:02}:{secs:02}"
+
 
 def _on_change_file_ms():
     if st.session_state.tmp_path != "":
@@ -97,7 +108,7 @@ def main():
 
     # ▼ スタート分指定
     meta = multi_shot.get_meta_info()
-    print(meta)
+    # print(meta)
     start_minute = st.number_input(
         f"Scraped Minite（0 = start, max_value={int(meta['duration']/60)})",
         min_value=0,
@@ -125,22 +136,23 @@ def main():
 
     screenshots = st.session_state.generated_screens
 
-    st.subheader("📷 Screenshots (1枚ごとにチェック可能)")
+    st.subheader(f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)")
     selected_timestamps = []
 
     cols = st.columns(5)
     for i, (timestamp, img_bytes) in enumerate(screenshots):
         col = cols[i % 5]
         with col:
-            checked = st.checkbox(
-                label=f"{int(timestamp % 60)}s", key=f"chk_{timestamp}"
-            )
+            time_str = multi_shot.seconds_to_timecode(timestamp)
+            checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
             st.image(
                 img_bytes,
                 # use_container_width=True
             )
             if checked:
-                selected_timestamps.append((timestamp, img_bytes))
+                selected_timestamps.append(
+                    (multi_shot.seconds_to_timecode(timestamp), img_bytes)
+                )
 
     st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
 
@@ -159,7 +171,7 @@ def main():
         st.subheader("📦 ダウンロード候補リスト")
 
         for item in st.session_state.screenshot_list:
-            st.text(f"Slide_{item['id']:03d}  |  {item['timestamp']}s")
+            st.text(f"Slide_{item['id']:03d}  |  {item['timestamp']}")
 
         if st.button("⬇️ Download Screen Shots (ZIP)"):
             zip_buffer = download_zip(st.session_state.screenshot_list)
