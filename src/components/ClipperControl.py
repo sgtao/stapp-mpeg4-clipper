@@ -5,8 +5,9 @@ from functions.VideoClipper import VideoClipper
 
 
 class ClipperControl:
-
     def __init__(self, uploaded_file):
+        if "clip_timestamp" not in st.session_state:
+            st.session_state.clip_timestamp = 1.0
         self.clipper = VideoClipper(uploaded_file)
         self.clipper.load()
         self.meta = self.clipper.get_metadata()
@@ -17,20 +18,39 @@ class ClipperControl:
         st.write(f"🎞 FPS: {self.meta['fps']:.2f}")
         st.write(f"📏 Size: {self.meta['size'][0]}x{self.meta['size'][1]}")
 
+    def _on_change_slider(self):
+        st.session_state.clip_timestamp = st.session_state.clip_control_slider
+
+    def _on_change_number(self):
+        st.session_state.clip_timestamp = st.session_state.clip_control_number
+
     def render_single_screenshot(self):
         # Clip Screenshot
-        timestamp_screen = st.slider(
-            label="Screenshot time stamp(sec.)",
+        st.slider(
+            label="slide Screenshot time stamp(sec.)",
             min_value=0,
             max_value=int(self.meta["duration"]),
-            value=1,
+            value=int(st.session_state.clip_timestamp),
             step=1,
+            key="clip_control_slider",
+            on_change=self._on_change_slider,
             format="%03d sec.",
         )
-        img_bytes = self.clipper.get_screenshot_bytes(t=timestamp_screen)
+        st.number_input(
+            label="change Screenshot time stamp(sec.)",
+            min_value=0,
+            max_value=int(self.meta["duration"]),
+            value=int(st.session_state.clip_timestamp),
+            step=1,
+            key="clip_control_number",
+            on_change=self._on_change_number,
+        )
+        img_bytes = self.clipper.get_screenshot_bytes(
+            t=st.session_state.clip_timestamp
+        )
         st.image(
             img_bytes,
-            caption=f"📸 Screenshot at {timestamp_screen} sec.",
+            caption=f"📸 Screenshot at {st.session_state.clip_timestamp} sec.",
         )
 
     def cleanup(self):
