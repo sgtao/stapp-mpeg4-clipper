@@ -77,6 +77,10 @@ def _on_change_file_ms():
         st.session_state.tmp_path = ""
 
 
+def _on_change_minite_ms():
+    st.session_state.generated_screens = []
+
+
 def download_zip(selected_list):
     """選択したスクリーンショットをZIPにまとめて返す"""
     zip_buffer = io.BytesIO()
@@ -115,6 +119,7 @@ def main():
         max_value=int(meta["duration"] / 60),
         step=1,
         value=0,
+        on_change=_on_change_minite_ms,
     )
 
     if st.button("🖼 Generate 60 Screenshots"):
@@ -131,40 +136,42 @@ def main():
         )
 
     # if "generated_screens" not in st.session_state:
-    if len(st.session_state.generated_screens) == 0:
-        return
+    if len(st.session_state.generated_screens) > 0:
+        screenshots = st.session_state.generated_screens
 
-    screenshots = st.session_state.generated_screens
+        st.subheader(
+            f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)"
+        )
+        selected_timestamps = []
 
-    st.subheader(f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)")
-    selected_timestamps = []
-
-    cols = st.columns(5)
-    for i, (timestamp, img_bytes) in enumerate(screenshots):
-        col = cols[i % 5]
-        with col:
-            time_str = multi_shot.seconds_to_timecode(timestamp)
-            checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
-            st.image(
-                img_bytes,
-                # use_container_width=True
-            )
-            if checked:
-                selected_timestamps.append(
-                    (multi_shot.seconds_to_timecode(timestamp), img_bytes)
+        cols = st.columns(5)
+        for i, (timestamp, img_bytes) in enumerate(screenshots):
+            col = cols[i % 5]
+            with col:
+                time_str = multi_shot.seconds_to_timecode(timestamp)
+                checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
+                st.image(
+                    img_bytes,
+                    # use_container_width=True
                 )
+                if checked:
+                    selected_timestamps.append(
+                        (multi_shot.seconds_to_timecode(timestamp), img_bytes)
+                    )
 
-    st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
+        st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
 
-    if st.button("Add ScreenShots"):
-        for ts, img in selected_timestamps:
-            item = {
-                "id": len(st.session_state.screenshot_list) + 1,
-                "timestamp": ts,
-                "image": img,
-            }
-            st.session_state.screenshot_list.append(item)
-        st.success(f"{len(selected_timestamps)}枚を候補リストに追加しました！")
+        if st.button("Add ScreenShots"):
+            for ts, img in selected_timestamps:
+                item = {
+                    "id": len(st.session_state.screenshot_list) + 1,
+                    "timestamp": ts,
+                    "image": img,
+                }
+                st.session_state.screenshot_list.append(item)
+            st.success(
+                f"{len(selected_timestamps)}枚を候補リストに追加しました！"
+            )
 
     if len(st.session_state.screenshot_list) > 0:
         st.divider()
