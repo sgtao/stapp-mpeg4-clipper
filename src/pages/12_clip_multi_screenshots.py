@@ -75,6 +75,8 @@ def _on_change_file_ms():
     if st.session_state.tmp_path != "":
         os.remove(st.session_state.tmp_path)
         st.session_state.tmp_path = ""
+        st.session_state.generated_screens = []
+        st.session_state.screenshot_list = []
 
 
 def _on_change_minite_ms():
@@ -86,7 +88,8 @@ def download_zip(selected_list):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w") as zipf:
         for idx, item in enumerate(selected_list, start=1):
-            zipf.writestr(f"Slide_{idx:03d}.png", item["image"].getvalue())
+            # zipf.writestr(f"Slide_{idx:03d}.png", item["image"].getvalue())
+            zipf.writestr(f"Slide{idx}.png", item["image"].getvalue())
     zip_buffer.seek(0)
     return zip_buffer
 
@@ -178,7 +181,8 @@ def main():
         st.subheader("📦 ダウンロード候補リスト")
 
         for item in st.session_state.screenshot_list:
-            st.text(f"Slide_{item['id']:03d}  |  {item['timestamp']}")
+            # st.text(f"Slide_{item['id']:03d}  |  {item['timestamp']}")
+            st.text(f"Slide{item['id']}  |  {item['timestamp']}")
 
         if st.button("⬇️ Download Screen Shots (ZIP)"):
             zip_buffer = download_zip(st.session_state.screenshot_list)
