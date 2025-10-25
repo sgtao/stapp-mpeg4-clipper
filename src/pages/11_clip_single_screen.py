@@ -63,8 +63,29 @@ def main():
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
         clipper_control.render_clipper_video()
 
+    # select timestamp
+    timestamp = clipper_control.render_timestamp_slider()
+
+    clipper_control.render_timestamp_input()
+
     # Clip Screenshot
-    clipper_control.render_single_screenshot()
+    clipper_control.render_single_screenshot(timestamp)
+
+    # ダウンロードボタン
+    screenshot_bytes = clipper_control.clipper.get_screenshot_bytes(
+        t=timestamp
+    )
+    time_str = clipper_control.format_time_mmss(timestamp)
+    st.write("timestamp:")
+    st.code(time_str.replace("-", ":"))
+    download_filename = f"{uploaded_file.name}_{time_str}.png"
+
+    st.download_button(
+        label="📥 Download Screenshot",
+        data=screenshot_bytes,
+        file_name=download_filename,
+        mime="image/png",
+    )
 
 
 if __name__ == "__main__":

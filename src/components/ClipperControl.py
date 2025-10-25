@@ -12,6 +12,12 @@ class ClipperControl:
         self.clipper.load()
         self.meta = self.clipper.get_metadata()
 
+    def format_time_mmss(self, timestamp: float) -> str:
+        timestamp = int(timestamp)
+        m = (timestamp % 3600) // 60
+        s = timestamp % 60
+        return f"{m:02d}-{s:02d}"
+
     def render_clipper_video(self):
         st.video(self.clipper.get_video_bytes())
         st.write(f"⏱ Duration: {self.meta['duration']:.2f}s")
@@ -24,9 +30,8 @@ class ClipperControl:
     def _on_change_number(self):
         st.session_state.clip_timestamp = st.session_state.clip_control_number
 
-    def render_single_screenshot(self):
-        # Clip Screenshot
-        st.slider(
+    def render_timestamp_slider(self):
+        return st.slider(
             label="slide Screenshot time stamp(sec.)",
             min_value=0,
             max_value=int(self.meta["duration"]),
@@ -36,7 +41,9 @@ class ClipperControl:
             on_change=self._on_change_slider,
             format="%03d sec.",
         )
-        st.number_input(
+
+    def render_timestamp_input(self):
+        return st.number_input(
             label="change Screenshot time stamp(sec.)",
             min_value=0,
             max_value=int(self.meta["duration"]),
@@ -45,12 +52,15 @@ class ClipperControl:
             key="clip_control_number",
             on_change=self._on_change_number,
         )
-        img_bytes = self.clipper.get_screenshot_bytes(
-            t=st.session_state.clip_timestamp
-        )
+
+    def render_single_screenshot(self, timestamp=0):
+        if timestamp == 0:
+            timestamp = st.session_state.clip_timestamp
+        # Clip Screenshot
+        img_bytes = self.clipper.get_screenshot_bytes(t=timestamp)
         st.image(
             img_bytes,
-            caption=f"📸 Screenshot at {st.session_state.clip_timestamp} sec.",
+            caption=f"📸 Screenshot at {timestamp} sec.",
         )
 
     def cleanup(self):
