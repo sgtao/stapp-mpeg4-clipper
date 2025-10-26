@@ -58,3 +58,13 @@ class VideoClipper:
             self.clip.close()
         if self.tmp_path and os.path.exists(self.tmp_path):
             os.remove(self.tmp_path)
+
+    def __enter__(self):
+        """with構文で利用開始した際に呼ばれる"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """with構文を抜けた際に自動クリーンアップ"""
+        self.cleanup()
+        # 例外を握りつぶさず、通常の伝播に任せる
+        return False
