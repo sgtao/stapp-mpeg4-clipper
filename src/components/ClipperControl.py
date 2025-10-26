@@ -9,7 +9,7 @@ class ClipperControl:
         if "clip_timestamp" not in st.session_state:
             st.session_state.clip_timestamp = 1.0
         self.clipper = VideoClipper(uploaded_file)
-        self.clipper.load()
+        # self.clipper.load()
         self.meta = self.clipper.get_metadata()
 
     def format_time_mmss(self, timestamp: float) -> str:
@@ -18,8 +18,8 @@ class ClipperControl:
         s = timestamp % 60
         return f"{m:02d}-{s:02d}"
 
-    def render_clipper_video(self):
-        st.video(self.clipper.get_video_bytes())
+    def render_clipper_screenshot(self):
+        st.video(self.clipper.get_screenshot_bytes())
         st.write(f"⏱ Duration: {self.meta['duration']:.2f}s")
         st.write(f"🎞 FPS: {self.meta['fps']:.2f}")
         st.write(f"📏 Size: {self.meta['size'][0]}x{self.meta['size'][1]}")
@@ -57,7 +57,7 @@ class ClipperControl:
         if timestamp == 0:
             timestamp = st.session_state.clip_timestamp
         # Clip Screenshot
-        img_bytes = self.clipper.get_screenshot_bytes(t=timestamp)
+        img_bytes = self.clipper.get_screenshot_bytes(sec=timestamp)
         st.image(
             img_bytes,
             caption=f"📸 Screenshot at {timestamp} sec.",

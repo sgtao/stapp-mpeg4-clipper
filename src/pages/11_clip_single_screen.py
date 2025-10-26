@@ -61,7 +61,7 @@ def main():
     # 動画再生 & メタ情報表示
     clipper_control = st.session_state.clipper_control
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
-        clipper_control.render_clipper_video()
+        clipper_control.render_clipper_screenshot()
 
     # select timestamp
     timestamp = clipper_control.render_timestamp_slider()
@@ -73,7 +73,7 @@ def main():
 
     # ダウンロードボタン
     screenshot_bytes = clipper_control.clipper.get_screenshot_bytes(
-        t=timestamp
+        sec=timestamp
     )
     time_str = clipper_control.format_time_mmss(timestamp)
     st.write("timestamp:")
