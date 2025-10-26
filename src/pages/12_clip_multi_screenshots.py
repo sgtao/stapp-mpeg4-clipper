@@ -1,20 +1,24 @@
 # 12_clip_multi_screenshots.py
 import io
-import os
+
+# import os
 import zipfile
-import tempfile
-from io import BytesIO
-from moviepy import VideoFileClip
-from PIL import Image
+
+import pandas as pd
 import streamlit as st
 
+from src.functions.VideoClipper import VideoClipper  # ✅ 追加
 
 APP_TITLE = "Multi Screenshot Selector (60s Clip)"
 
 
 def initialize_session_state():
-    if "tmp_path" not in st.session_state:
-        st.session_state.tmp_path = ""
+    if "filename" not in st.session_state:
+        st.session_state.filename = ""
+    if "multi_shot" not in st.session_state:
+        st.session_state.multi_shot = None
+    if "selected_minute" not in st.session_state:
+        st.session_state.selected_minute = 0
     if "generated_screens" not in st.session_state:
         st.session_state.generated_screens = []
     if "screenshot_list" not in st.session_state:
@@ -22,59 +26,49 @@ def initialize_session_state():
 
 
 class MultiScreenshot:
-    def __init__(self, video_bytes):
-        """指定した分(start_minute)から60秒分のフレームを抽出"""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
-            tmp.write(video_bytes)
-            self.tmp_path = tmp.name
-            st.session_state.tmp_path = tmp.name
-            # st.rerun()
+    def __init__(self, uploaded_file):
+        if uploaded_file is None:
+            raise ValueError("No file uploaded.")
+        video_bytes = uploaded_file.read()
+        self.clipper = VideoClipper(video_bytes)
+        # self.clipper.load()
+        self.filename = uploaded_file.name  # 元ファイル名を保持
+        st.session_state.filename = self.filename
+        self.meta = self.clipper.get_metadata()
 
     def get_meta_info(self):
-        clip = VideoFileClip(st.session_state.tmp_path)
-        meta = {
-            "duration": clip.duration,
-            "fps": clip.fps,
-            "size": (clip.w, clip.h),
-        }
-        clip.close()
-        return meta
+        """メタデータを取得"""
+        return self.meta
 
-    def extract_screenshots(self, start_minute=0):
+    def extract_screenshots(self, start_minute=0, end_minute=0, step=1):
         # clip = VideoFileClip(self.tmp_path)
-        clip = VideoFileClip(st.session_state.tmp_path)
         screenshots = []
         start_time = start_minute * 60
-        end_time = min(start_time + 60, clip.duration)
+        if end_minute > 0:
+            end_time = min(end_minute * 60, self.meta["duration"])
+        else:
+            end_time = min(start_time + 60, self.meta["duration"])
 
-        for i in range(int(start_time), int(end_time)):
-            frame = clip.get_frame(i)
-            image = Image.fromarray(frame)
-            img_bytes = BytesIO()
-            image.save(img_bytes, format="PNG")
-            img_bytes.seek(0)
-            screenshots.append((i, img_bytes))
+        for sec in range(int(start_time), int(end_time), step):
+            img_bytes = self.clipper.get_screenshot_bytes(sec)
+            screenshots.append((sec, img_bytes))
 
-        clip.close()
-        # os.remove(tmp_path)
         return screenshots
 
     def seconds_to_timecode(self, seconds: float) -> str:
-        """秒数を hh:mm:ss の形式に変換する"""
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        secs = int(seconds % 60)
+        """秒数を mm:ss の形式に変換する"""
+        return self.clipper.seconds_to_timecode(seconds)
 
-        if hours > 0:
-            return f"{hours:02}:{minutes:02}:{secs:02}"
-        else:
-            return f"{minutes:02}:{secs:02}"
+    def cleanup(self):
+        """VideoClipperのクリーンアップ"""
+        self.clipper.cleanup()
 
 
 def _on_change_file_ms():
-    if st.session_state.tmp_path != "":
-        os.remove(st.session_state.tmp_path)
-        st.session_state.tmp_path = ""
+    if st.session_state.multi_shot is not None:
+        multi_shot = st.session_state.multi_shot
+        multi_shot.cleanup()
+        st.session_state.multi_shot = None
         st.session_state.generated_screens = []
         st.session_state.screenshot_list = []
 
@@ -98,7 +92,6 @@ def main():
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="Back to Home", icon="🏠")
     st.subheader(f"📹 {APP_TITLE}")
-    initialize_session_state()
 
     uploaded_file = st.file_uploader(
         "🎞 Upload MP4 file",
@@ -110,18 +103,40 @@ def main():
         st.info("動画ファイルをアップロードしてください。")
         return
 
-    video_bytes = uploaded_file.read()
-    multi_shot = MultiScreenshot(video_bytes)
+    if st.session_state.multi_shot is None:
+        st.session_state.multi_shot = MultiScreenshot(uploaded_file)
 
-    # ▼ スタート分指定
+    # 動画再生 & メタ情報表示
+    multi_shot = st.session_state.multi_shot
     meta = multi_shot.get_meta_info()
-    # print(meta)
+    # st.json(meta)
+
+    minute_shots = multi_shot.extract_screenshots(
+        start_minute=0,
+        end_minute=999,
+        step=60,
+    )
+    selected_timestamps = []
+    if len(minute_shots) > 0:
+        st.subheader(f"📷 Screenshots Each Minutes ({len(minute_shots)})")
+
+        cols = st.columns(5)
+        for i, (timestamp, img_bytes) in enumerate(minute_shots):
+            col = cols[i % 5]
+            with col:
+                time_str = multi_shot.seconds_to_timecode(timestamp)
+                st.image(
+                    img_bytes,
+                )
+                if st.button(time_str):
+                    st.session_state.selected_minute = timestamp // 60
+
     start_minute = st.number_input(
         f"Scraped Minite（0 = start, max_value={int(meta['duration']/60)})",
         min_value=0,
         max_value=int(meta["duration"] / 60),
         step=1,
-        value=0,
+        value=st.session_state.selected_minute,
         on_change=_on_change_minite_ms,
     )
 
@@ -180,9 +195,17 @@ def main():
         st.divider()
         st.subheader("📦 ダウンロード候補リスト")
 
-        for item in st.session_state.screenshot_list:
-            # st.text(f"Slide_{item['id']:03d}  |  {item['timestamp']}")
-            st.text(f"Slide_{item['id']}  |  {item['timestamp']}")
+        # 表示用に必要な列だけ抽出（id と timestamp）
+        # for item in st.session_state.screenshot_list:
+        #     st.text(f"Slide_{item['id']}  |  {item['timestamp']}")
+        # DataFrameに変換
+        df = pd.DataFrame(st.session_state.screenshot_list)
+        df_display = df[["id", "timestamp"]].rename(
+            columns={"id": "Slide ID", "timestamp": "Timestamp"}
+        )
+
+        # 表形式で表示
+        st.dataframe(df_display, use_container_width=True)
 
         if st.button("⬇️ Download Screen Shots (ZIP)"):
             zip_buffer = download_zip(st.session_state.screenshot_list)
@@ -195,4 +218,5 @@ def main():
 
 
 if __name__ == "__main__":
+    initialize_session_state()
     main()
