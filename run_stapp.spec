@@ -28,8 +28,6 @@ a = Analysis(
         "src.components.spiral_chart",
         "src.functions.calculations",
         # 以下は、Streamlitの依存パッケージ
-        "altair",
-        "pandas",
         "numpy",
         "plotly",
         "pillow",
