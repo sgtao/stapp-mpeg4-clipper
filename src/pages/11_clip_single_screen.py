@@ -78,7 +78,7 @@ def main():
     time_str = clipper_control.format_time_mmss(timestamp)
     st.write("timestamp:")
     st.code(time_str.replace("-", ":"))
-    download_filename = f"{uploaded_file.name}_{time_str}.png"
+    download_filename = f"{clipper_control.get_filename()}_{time_str}.png"
 
     st.download_button(
         label="📥 Download Screenshot",

@@ -14,17 +14,15 @@ class VideoClipper:
     - 任意時刻でのスクリーンショット生成
     """
 
-    def __init__(self, uploaded_file):
-        if uploaded_file is None:
-            raise ValueError("No file uploaded.")
-
+    def __init__(self, video_bytes):
         # 一時ファイルとして保存（moviepyはファイルパスを要求するため）
+        self.tmp_path = ""
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
-            tmp.write(uploaded_file.read())
+            tmp.write(video_bytes)
             self.tmp_path = tmp.name
+            # st.rerun()
 
         self.clip = VideoFileClip(self.tmp_path)
-        self.filename = uploaded_file.name  # 元ファイル名を保持
 
     def get_metadata(self):
         """動画のメタ情報を返す"""
@@ -53,12 +51,6 @@ class VideoClipper:
         m = int(seconds // 60)
         s = int(seconds % 60)
         return f"{m:02}:{s:02}"
-
-    def get_screenshot_filename(self, sec: float) -> str:
-        """指定秒数の時刻を使ったファイル名を返す"""
-        timecode = self.seconds_to_timecode(sec)
-        base, _ = os.path.splitext(self.filename)
-        return f"{base}_{timecode}.png"
 
     def cleanup(self):
         """リソース解放"""

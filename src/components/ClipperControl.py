@@ -1,4 +1,6 @@
 # ClipperControl.py
+import os
+
 import streamlit as st
 
 from functions.VideoClipper import VideoClipper
@@ -8,8 +10,12 @@ class ClipperControl:
     def __init__(self, uploaded_file):
         if "clip_timestamp" not in st.session_state:
             st.session_state.clip_timestamp = 1.0
-        self.clipper = VideoClipper(uploaded_file)
+        if uploaded_file is None:
+            raise ValueError("No file uploaded.")
+        video_bytes = uploaded_file.read()
+        self.clipper = VideoClipper(video_bytes)
         # self.clipper.load()
+        self.filename = uploaded_file.name  # 元ファイル名を保持
         self.meta = self.clipper.get_metadata()
 
     def format_time_mmss(self, timestamp: float) -> str:
@@ -53,6 +59,10 @@ class ClipperControl:
             on_change=self._on_change_number,
         )
 
+    def get_filename(self) -> str:
+        """使ったファイル名（拡張子前まで）を返す"""
+        return os.path.splitext(os.path.basename(self.filename))[0]
+
     def render_single_screenshot(self, timestamp=0):
         if timestamp == 0:
             timestamp = st.session_state.clip_timestamp
@@ -72,8 +82,3 @@ class ClipperControl:
 
         self.clipper = None
         self.meta = {"duration": 0, "fps": 0, "size": []}
-
-    def reset_clipper(self, uploaded_file):
-        self.cleanup()
-        self.clipper = VideoClipper(uploaded_file)
-        self.meta = self.clipper.get_metadata()
