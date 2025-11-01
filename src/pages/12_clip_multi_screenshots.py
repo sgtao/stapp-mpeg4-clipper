@@ -2,6 +2,7 @@
 import io
 
 # import os
+import time
 import zipfile
 
 import pandas as pd
@@ -88,6 +89,61 @@ def download_zip(selected_list):
     return zip_buffer
 
 
+@st.dialog(
+    title="Screenshots in specified minute",
+    width="medium",
+)
+def select_screenshots_dialog(start_minute):
+    multi_shot = st.session_state.multi_shot
+    screenshots = multi_shot.extract_screenshots(
+        # video_bytes, start_minute=start_minute
+        start_minute=start_minute
+    )
+
+    st.session_state.generated_screens = screenshots
+    # st.success(
+    #     f"{len(screenshots)} 枚のスクリーンショットを生成しました。"
+    # )
+
+    st.subheader(f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)")
+    selected_timestamps = []
+
+    cols = st.columns(5)
+    for i, (timestamp, img_bytes) in enumerate(screenshots):
+        col = cols[i % 5]
+        with col:
+            time_str = multi_shot.seconds_to_timecode(timestamp)
+            checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
+            st.image(
+                img_bytes,
+                # use_container_width=True
+            )
+            if checked:
+                selected_timestamps.append((time_str, img_bytes))
+
+    st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Add ScreenShots", type="primary"):
+            for ts, img in selected_timestamps:
+                item = {
+                    "id": len(st.session_state.screenshot_list) + 1,
+                    "timestamp": ts,
+                    "image": img,
+                }
+                st.session_state.screenshot_list.append(item)
+            st.success(
+                body=f"{len(selected_timestamps)}枚を候補リストに追加しました！",
+                icon="👍"
+            )
+    with col2:
+        if st.button("Close"):
+            st.info("モーダルを閉じます")
+            time.sleep(2)
+            st.rerun()
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="Back to Home", icon="🏠")
@@ -116,7 +172,6 @@ def main():
         end_minute=999,
         step=60,
     )
-    selected_timestamps = []
     if len(minute_shots) > 0:
         st.subheader(f"📷 Screenshots Each Minutes ({len(minute_shots)})")
 
@@ -130,6 +185,9 @@ def main():
                 )
                 if st.button(time_str):
                     st.session_state.selected_minute = timestamp // 60
+                    select_screenshots_dialog(
+                        start_minute=st.session_state.selected_minute,
+                    )
 
     start_minute = st.number_input(
         f"Scraped Minite（0 = start, max_value={int(meta['duration']/60)})",
@@ -152,44 +210,6 @@ def main():
         st.success(
             f"{len(screenshots)} 枚のスクリーンショットを生成しました。"
         )
-
-    # if "generated_screens" not in st.session_state:
-    if len(st.session_state.generated_screens) > 0:
-        screenshots = st.session_state.generated_screens
-
-        st.subheader(
-            f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)"
-        )
-        selected_timestamps = []
-
-        cols = st.columns(5)
-        for i, (timestamp, img_bytes) in enumerate(screenshots):
-            col = cols[i % 5]
-            with col:
-                time_str = multi_shot.seconds_to_timecode(timestamp)
-                checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
-                st.image(
-                    img_bytes,
-                    # use_container_width=True
-                )
-                if checked:
-                    selected_timestamps.append(
-                        (multi_shot.seconds_to_timecode(timestamp), img_bytes)
-                    )
-
-        st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
-
-        if st.button("Add ScreenShots"):
-            for ts, img in selected_timestamps:
-                item = {
-                    "id": len(st.session_state.screenshot_list) + 1,
-                    "timestamp": ts,
-                    "image": img,
-                }
-                st.session_state.screenshot_list.append(item)
-            st.success(
-                f"{len(selected_timestamps)}枚を候補リストに追加しました！"
-            )
 
     if len(st.session_state.screenshot_list) > 0:
         st.divider()
