@@ -71,8 +71,9 @@ def _on_change_file_ms():
     if st.session_state.multi_shot is not None:
         multi_shot = st.session_state.multi_shot
         multi_shot.cleanup()
-        st.session_state.multi_shot = None
-        st.session_state.screenshot_list = []
+        # st.session_state.multi_shot = None
+        # st.session_state.screenshot_list = []
+        st.session_state.clear()
 
 
 def download_zip(selected_list):
