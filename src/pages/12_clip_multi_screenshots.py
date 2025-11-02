@@ -20,8 +20,6 @@ def initialize_session_state():
         st.session_state.multi_shot = None
     if "selected_minute" not in st.session_state:
         st.session_state.selected_minute = 0
-    if "generated_screens" not in st.session_state:
-        st.session_state.generated_screens = []
     if "screenshot_list" not in st.session_state:
         st.session_state.screenshot_list = []
 
@@ -70,12 +68,7 @@ def _on_change_file_ms():
         multi_shot = st.session_state.multi_shot
         multi_shot.cleanup()
         st.session_state.multi_shot = None
-        st.session_state.generated_screens = []
         st.session_state.screenshot_list = []
-
-
-def _on_change_minite_ms():
-    st.session_state.generated_screens = []
 
 
 def download_zip(selected_list):
@@ -89,43 +82,53 @@ def download_zip(selected_list):
     return zip_buffer
 
 
+def generate_screen_cache_key(minute):
+    return f"screens_{minute}"
+
+
 @st.dialog(
     title="Screenshots in specified minute",
     width="medium",
 )
 def select_screenshots_dialog(start_minute):
     multi_shot = st.session_state.multi_shot
+    selected_minute = st.session_state.selected_minute
+    video_meta = multi_shot.get_meta_info()
+    if selected_minute == start_minute:
+        cache_key = generate_screen_cache_key(start_minute)
+    else:
+        cache_key = generate_screen_cache_key(selected_minute)
 
-    cache_key = f"screens_{start_minute}"
+    st.subheader(
+        f"📷 Screenshots on {selected_minute}m (`Add`でチェック画像を取得）"
+    )
+    st.write(f"start minute: {start_minute}")
+
+    screenshots = None
+    selected_timestamps = []
     if cache_key not in st.session_state:
         st.info("📸 スクリーンショットを生成中...")
-        screenshots = multi_shot.extract_screenshots(start_minute=start_minute)
+        screenshots = multi_shot.extract_screenshots(selected_minute)
         st.session_state[cache_key] = screenshots
     else:
         screenshots = st.session_state[cache_key]
-
-    st.session_state.generated_screens = screenshots
-    st.subheader(
-        f"📷 Screenshots on {start_minute}m (`Add`でチェック画像を取得）"
-    )
-    selected_timestamps = []
 
     cols = st.columns(5)
     for i, (timestamp, img_bytes) in enumerate(screenshots):
         col = cols[i % 5]
         with col:
+            st.image(img_bytes)
             time_str = multi_shot.seconds_to_timecode(timestamp)
             checked = st.checkbox(
                 label=time_str, key=f"chk_{start_minute}_{timestamp}"
             )
-            st.image(img_bytes)
             if checked:
                 selected_timestamps.append((time_str, img_bytes))
 
     st.write(f"✅ 選択枚数: {len(selected_timestamps)}")
 
-    col1, col2 = st.columns(2)
-    with col1:
+    col_l, col_r = st.columns(2)
+    with col_l:
         if st.button("Add ScreenShots", type="primary"):
             for ts, img in selected_timestamps:
                 item = {
@@ -138,11 +141,26 @@ def select_screenshots_dialog(start_minute):
                 body=f"{len(selected_timestamps)}枚を候補リストに追加しました！",
                 icon="👍",
             )
-    with col2:
-        if st.button("Close"):
-            st.info("モーダルを閉じます")
-            time.sleep(1)
-            st.rerun()
+    with col_r:
+        r1, r2, r3 = st.columns(3)
+        with r1:
+            if st.button(label="", icon="⏪", disabled=(selected_minute <= 0)):
+                st.session_state.selected_minute -= 1
+                st.rerun(scope="fragment")
+        with r2:
+            next_tail_sec = (selected_minute + 1) * 60
+            if st.button(
+                label="",
+                icon="⏩",
+                disabled=(next_tail_sec > video_meta["duration"]),
+            ):
+                st.session_state.selected_minute += 1
+                st.rerun(scope="fragment")
+        with r3:
+            if st.button("Close"):
+                st.info("Closing...")
+                time.sleep(1)
+                st.rerun(scope="app")
 
 
 def main():
@@ -186,9 +204,7 @@ def main():
                 )
                 if st.button(time_str):
                     st.session_state.selected_minute = timestamp // 60
-                    select_screenshots_dialog(
-                        start_minute=st.session_state.selected_minute,
-                    )
+                    select_screenshots_dialog(timestamp // 60)
 
     if len(st.session_state.screenshot_list) > 0:
         st.divider()
