@@ -43,12 +43,12 @@ class MultiScreenshot:
         """メタデータを取得"""
         return self.meta
 
-    def extract_screenshots(self, start_minute=0, end_minute=0, step=1):
+    def extract_screenshots(self, start_minute=0, period_sec=0, step=1):
         # clip = VideoFileClip(self.tmp_path)
         screenshots = []
         start_time = start_minute * 60
-        if end_minute > 0:
-            end_time = min(end_minute * 60, self.meta["duration"])
+        if period_sec > 0:
+            end_time = min(start_minute + period_sec, self.meta["duration"])
         else:
             end_time = min(start_time + 60, self.meta["duration"])
 
