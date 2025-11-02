@@ -35,6 +35,10 @@ class MultiScreenshot:
         st.session_state.filename = self.filename
         self.meta = self.clipper.get_metadata()
 
+    def get_filename(self):
+        """選択ファイルを取得"""
+        return self.filename
+
     def get_meta_info(self):
         """メタデータを取得"""
         return self.meta
@@ -219,14 +223,37 @@ def main():
         # 表形式で表示
         st.dataframe(data=df_display, width="stretch")
 
-        if st.button("⬇️ Download Screen Shots (ZIP)"):
-            zip_buffer = download_zip(st.session_state.screenshot_list)
-            st.download_button(
-                label="📦 Download ZIP",
-                data=zip_buffer,
-                file_name="Selected_Screenshots.zip",
-                mime="application/zip",
+        # ---------------------------
+        # ダウンロード機能
+        # ---------------------------
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            # TimeStamp(CSV) ダウンロード機能
+            csv_buffer = io.StringIO()
+            df_display.to_csv(csv_buffer, index=False)
+            csv_data = csv_buffer.getvalue()
+            csv_filename = (
+                f"Selected_Timestamps_{multi_shot.get_filename()}.csv"
             )
+            st.download_button(
+                label="📄 Download Timestamp List (CSV)",
+                data=csv_data,
+                file_name=csv_filename,
+                mime="text/csv",
+            )
+        with col2:
+            pass
+        with col3:
+            # Snapshots(ZIP, png) ダウンロード機能
+            if st.button("⬇️ Download Screen Shots (ZIP)"):
+                zip_buffer = download_zip(st.session_state.screenshot_list)
+                zip_filename = f"Screenshots_{multi_shot.get_filename()}.zip"
+                st.download_button(
+                    label="📦 Download ZIP",
+                    data=zip_buffer,
+                    file_name=zip_filename,
+                    mime="application/zip",
+                )
 
 
 if __name__ == "__main__":
