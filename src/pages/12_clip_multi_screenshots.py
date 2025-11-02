@@ -193,7 +193,7 @@ def main():
 
     minute_shots = multi_shot.extract_screenshots(
         start_minute=0,
-        end_minute=999,
+        period_sec=9999,
         step=60,
     )
     if len(minute_shots) > 0:
