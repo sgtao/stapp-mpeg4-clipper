@@ -95,17 +95,19 @@ def download_zip(selected_list):
 )
 def select_screenshots_dialog(start_minute):
     multi_shot = st.session_state.multi_shot
-    screenshots = multi_shot.extract_screenshots(
-        # video_bytes, start_minute=start_minute
-        start_minute=start_minute
-    )
+
+    cache_key = f"screens_{start_minute}"
+    if cache_key not in st.session_state:
+        st.info("📸 スクリーンショットを生成中...")
+        screenshots = multi_shot.extract_screenshots(start_minute=start_minute)
+        st.session_state[cache_key] = screenshots
+    else:
+        screenshots = st.session_state[cache_key]
 
     st.session_state.generated_screens = screenshots
-    # st.success(
-    #     f"{len(screenshots)} 枚のスクリーンショットを生成しました。"
-    # )
-
-    st.subheader(f"📷 Screenshots at {start_minute}m (1枚ごとにチェック可能)")
+    st.subheader(
+        f"📷 Screenshots on {start_minute}m (`Add`でチェック画像を取得）"
+    )
     selected_timestamps = []
 
     cols = st.columns(5)
@@ -113,11 +115,10 @@ def select_screenshots_dialog(start_minute):
         col = cols[i % 5]
         with col:
             time_str = multi_shot.seconds_to_timecode(timestamp)
-            checked = st.checkbox(label=time_str, key=f"chk_{timestamp}")
-            st.image(
-                img_bytes,
-                # use_container_width=True
+            checked = st.checkbox(
+                label=time_str, key=f"chk_{start_minute}_{timestamp}"
             )
+            st.image(img_bytes)
             if checked:
                 selected_timestamps.append((time_str, img_bytes))
 
@@ -135,12 +136,12 @@ def select_screenshots_dialog(start_minute):
                 st.session_state.screenshot_list.append(item)
             st.success(
                 body=f"{len(selected_timestamps)}枚を候補リストに追加しました！",
-                icon="👍"
+                icon="👍",
             )
     with col2:
         if st.button("Close"):
             st.info("モーダルを閉じます")
-            time.sleep(2)
+            time.sleep(1)
             st.rerun()
 
 
@@ -164,7 +165,7 @@ def main():
 
     # 動画再生 & メタ情報表示
     multi_shot = st.session_state.multi_shot
-    meta = multi_shot.get_meta_info()
+    # meta = multi_shot.get_meta_info()
     # st.json(meta)
 
     minute_shots = multi_shot.extract_screenshots(
@@ -189,43 +190,18 @@ def main():
                         start_minute=st.session_state.selected_minute,
                     )
 
-    start_minute = st.number_input(
-        f"Scraped Minite（0 = start, max_value={int(meta['duration']/60)})",
-        min_value=0,
-        max_value=int(meta["duration"] / 60),
-        step=1,
-        value=st.session_state.selected_minute,
-        on_change=_on_change_minite_ms,
-    )
-
-    if st.button("🖼 Generate 60 Screenshots"):
-        st.info("スクリーンショットを生成中です。少々お待ちください…")
-        st.session_state.generated_screens = []
-        screenshots = multi_shot.extract_screenshots(
-            # video_bytes, start_minute=start_minute
-            start_minute=start_minute
-        )
-
-        st.session_state.generated_screens = screenshots
-        st.success(
-            f"{len(screenshots)} 枚のスクリーンショットを生成しました。"
-        )
-
     if len(st.session_state.screenshot_list) > 0:
         st.divider()
         st.subheader("📦 ダウンロード候補リスト")
 
         # 表示用に必要な列だけ抽出（id と timestamp）
-        # for item in st.session_state.screenshot_list:
-        #     st.text(f"Slide_{item['id']}  |  {item['timestamp']}")
-        # DataFrameに変換
         df = pd.DataFrame(st.session_state.screenshot_list)
         df_display = df[["id", "timestamp"]].rename(
             columns={"id": "Slide ID", "timestamp": "Timestamp"}
         )
 
         # 表形式で表示
-        st.dataframe(df_display, use_container_width=True)
+        st.dataframe(data=df_display, width="stretch")
 
         if st.button("⬇️ Download Screen Shots (ZIP)"):
             zip_buffer = download_zip(st.session_state.screenshot_list)
