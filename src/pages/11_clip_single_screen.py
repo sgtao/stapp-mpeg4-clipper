@@ -6,6 +6,7 @@ import hashlib
 import streamlit as st
 
 from components.ClipperControl import ClipperControl
+from functions.AppLogger import AppLogger
 
 APP_TITLE = "Clip Single Screenshot App."
 
@@ -24,6 +25,14 @@ def initialize_session_state():
     if "clipper_control" not in st.session_state:
         st.session_state.clipper_control = None
 
+    if "app_logger" not in st.session_state:
+        app_logger = AppLogger(APP_TITLE)
+        app_logger.app_start()
+        st.session_state.app_logger = app_logger
+    elif st.session_state.app_logger.name != APP_TITLE:
+        app_logger = AppLogger(APP_TITLE)
+        app_logger.app_start()
+        st.session_state.app_logger = app_logger
 
 def cleanup_clipper():
     """アップロード解除時に一時ファイルを削除"""
@@ -33,8 +42,14 @@ def cleanup_clipper():
         st.session_state.mpeg_hash = None
         st.toast("🧹 一時ファイルを削除しました。")
 
+def log_download_filename(filename):
+    app_logger = st.session_state.app_logger
+    app_logger.info_log(f"download as {filename}")
+
 
 def main():
+    app_logger = st.session_state.app_logger
+
     st.page_link("main.py", label="Back to Home", icon="🏠")
     st.subheader(f"📸 {APP_TITLE}")
 
@@ -57,6 +72,7 @@ def main():
         st.session_state.clipper_control = ClipperControl(uploaded_file)
         st.session_state.mpeg_hash = current_hash
         st.info("Loaded Video data into cache.")
+        app_logger.info_log(f"Load vide data : {uploaded_file.name}")
     else:
         st.info("Reload Video data from cache.")
 
@@ -103,6 +119,8 @@ def main():
             data=screenshot_bytes,
             file_name=download_filename,
             mime="image/png",
+            on_click=log_download_filename,
+            args=[download_filename],
         )
 
     with col_r:
