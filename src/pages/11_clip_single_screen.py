@@ -1,6 +1,8 @@
 # 11_clip_single_screen.py
+import base64
 import hashlib
 
+# import pyperclip
 import streamlit as st
 
 from components.ClipperControl import ClipperControl
@@ -61,12 +63,12 @@ def main():
     # 動画再生 & メタ情報表示
     clipper_control = st.session_state.clipper_control
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
-        clipper_control.render_clipper_screenshot()
+        clipper_control.render_clipper_video()
 
     # select timestamp
-    timestamp = clipper_control.render_timestamp_slider()
+    # clipper_control.render_timestamp_slider()
 
-    clipper_control.render_timestamp_input()
+    timestamp = clipper_control.render_timestamp_input()
 
     # Clip Screenshot
     clipper_control.render_single_screenshot(timestamp)
@@ -86,6 +88,13 @@ def main():
         file_name=download_filename,
         mime="image/png",
     )
+
+    # --- Base64化用に bytes を抽出 ---
+    with st.expander("base64 of image"):
+        img_base64 = base64.b64encode(screenshot_bytes.getvalue()).decode(
+            "utf-8"
+        )
+        st.code(body=f"data:image/png;base64,{img_base64}", height=100)
 
 
 if __name__ == "__main__":

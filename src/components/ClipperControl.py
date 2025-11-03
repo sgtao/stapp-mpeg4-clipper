@@ -24,8 +24,13 @@ class ClipperControl:
         s = timestamp % 60
         return f"{m:02d}-{s:02d}"
 
-    def render_clipper_screenshot(self):
-        st.video(self.clipper.get_screenshot_bytes())
+    def get_duration(self):
+        return f"{int(self.meta["duration"]):03d}"
+
+    def render_clipper_video(self):
+        st.video(self.clipper.get_video_path())
+        # screen_image = self.clipper.get_screenshot_bytes()
+        # st.image(screen_image)
         st.write(f"⏱ Duration: {self.meta['duration']:.2f}s")
         st.write(f"🎞 FPS: {self.meta['fps']:.2f}")
         st.write(f"📏 Size: {self.meta['size'][0]}x{self.meta['size'][1]}")
@@ -50,7 +55,7 @@ class ClipperControl:
 
     def render_timestamp_input(self):
         return st.number_input(
-            label="change Screenshot time stamp(sec.)",
+            label=f"input screen timecode(sec, max: {self.get_duration()})",
             min_value=0,
             max_value=int(self.meta["duration"]),
             value=int(st.session_state.clip_timestamp),
@@ -63,11 +68,19 @@ class ClipperControl:
         """使ったファイル名（拡張子前まで）を返す"""
         return os.path.splitext(os.path.basename(self.filename))[0]
 
-    def render_single_screenshot(self, timestamp=0):
+    def get_screenshot_image(self, timestamp=0):
         if timestamp == 0:
             timestamp = st.session_state.clip_timestamp
+
+        # image_obj, size = self.clipper.get_screenshot_bytes(sec=timestamp)
+        # print(f"image size: {size}")
+        image_byte = self.clipper.get_screenshot_bytes(sec=timestamp)
+        return image_byte
+
+    def render_single_screenshot(self, timestamp=0):
         # Clip Screenshot
-        img_bytes = self.clipper.get_screenshot_bytes(sec=timestamp)
+        img_bytes = self.get_screenshot_image(timestamp)
+
         st.image(
             img_bytes,
             caption=f"📸 Screenshot at {timestamp} sec.",

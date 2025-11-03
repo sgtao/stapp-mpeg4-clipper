@@ -24,6 +24,9 @@ class VideoClipper:
 
         self.clip = VideoFileClip(self.tmp_path)
 
+    def get_video_path(self):
+        return self.tmp_path
+
     def get_metadata(self):
         """動画のメタ情報を返す"""
         return {
@@ -32,16 +35,19 @@ class VideoClipper:
             "size": (self.clip.w, self.clip.h),
         }
 
-    def get_screenshot_bytes(self, sec: float = 1.0) -> BytesIO:
+    def get_screenshot_bytes(self, sec: float = 1.0):
         """指定秒数でスクリーンショットを取得しBytesIOで返す"""
         if sec < 0 or sec > self.clip.duration:
             raise ValueError("指定時間が動画の範囲外です。")
 
         frame = self.clip.get_frame(sec)
         image = Image.fromarray(frame)
+        # print(f"image size: {image.size}")
+        # width, height = image.size
         img_bytes = BytesIO()
         image.save(img_bytes, format="PNG")
         img_bytes.seek(0)
+        # return img_bytes, ({"width": width, "height": height})
         return img_bytes
 
     def seconds_to_timecode(self, seconds: float) -> str:
