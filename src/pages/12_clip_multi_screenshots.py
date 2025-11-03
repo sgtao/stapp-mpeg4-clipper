@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from src.functions.VideoClipper import VideoClipper  # ✅ 追加
+from functions.AppLogger import AppLogger
 
 APP_TITLE = "Multi Screenshot Selector (60s Clip)"
 
@@ -23,6 +24,15 @@ def initialize_session_state():
     if "screenshot_list" not in st.session_state:
         st.session_state.screenshot_list = []
 
+    if "app_logger" not in st.session_state:
+        app_logger = AppLogger(APP_TITLE)
+        app_logger.app_start()
+        st.session_state.app_logger = app_logger
+    elif st.session_state.app_logger.name != APP_TITLE:
+        app_logger = AppLogger(APP_TITLE)
+        app_logger.app_start()
+        st.session_state.app_logger = app_logger
+
 
 class MultiScreenshot:
     def __init__(self, uploaded_file):
@@ -34,6 +44,8 @@ class MultiScreenshot:
         self.filename = uploaded_file.name  # 元ファイル名を保持
         st.session_state.filename = self.filename
         self.meta = self.clipper.get_metadata()
+        self.app_logger = st.session_state.app_logger
+        self.app_logger.info_log(f"Load vide data : {self.filename}")
 
     def get_filename(self):
         """選択ファイルを取得"""
@@ -168,6 +180,11 @@ def select_screenshots_dialog(start_minute):
                 st.rerun(scope="app")
 
 
+def log_download_filename(filename):
+    app_logger = st.session_state.app_logger
+    app_logger.info_log(f"download as {filename}")
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="Back to Home", icon="🏠")
@@ -241,6 +258,8 @@ def main():
                 data=csv_data,
                 file_name=csv_filename,
                 mime="text/csv",
+                on_click=log_download_filename,
+                args=[csv_filename],
             )
         with col2:
             pass
@@ -254,6 +273,8 @@ def main():
                     data=zip_buffer,
                     file_name=zip_filename,
                     mime="application/zip",
+                    on_click=log_download_filename,
+                    args=[zip_filename],
                 )
 
 

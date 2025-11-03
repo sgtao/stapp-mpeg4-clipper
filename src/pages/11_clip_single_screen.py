@@ -34,6 +34,7 @@ def initialize_session_state():
         app_logger.app_start()
         st.session_state.app_logger = app_logger
 
+
 def cleanup_clipper():
     """アップロード解除時に一時ファイルを削除"""
     clipper_control = st.session_state.get("clipper_control")
@@ -41,6 +42,7 @@ def cleanup_clipper():
         clipper_control.cleanup()
         st.session_state.mpeg_hash = None
         st.toast("🧹 一時ファイルを削除しました。")
+
 
 def log_download_filename(filename):
     app_logger = st.session_state.app_logger
