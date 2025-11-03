@@ -65,36 +65,53 @@ def main():
     with st.expander(f"File: {uploaded_file.name}", expanded=False):
         clipper_control.render_clipper_video()
 
-    # select timestamp
+    # select timestamp & scale
     # clipper_control.render_timestamp_slider()
+    col_l, col_r = st.columns(2)
+    with col_l:
+        timestamp = clipper_control.render_timestamp_input()
+    with col_r:
+        scale = st.slider(
+            label="Select Scale Size(Reduction rate)",
+            min_value=0.2,
+            max_value=1.0,
+            value=1.0,
+            step=0.1,
+        )
 
-    timestamp = clipper_control.render_timestamp_input()
-
-    # Clip Screenshot
-    clipper_control.render_single_screenshot(timestamp)
-
-    # ダウンロードボタン
-    screenshot_bytes = clipper_control.clipper.get_screenshot_bytes(
-        sec=timestamp
+    # Show a clipped screenshot
+    screenshot_bytes, w, h = clipper_control.get_screenshot_image(
+        timestamp=timestamp,
+        scale=scale,
     )
+    st.image(
+        image=screenshot_bytes,
+        caption=f"📸 Screenshot at {timestamp} sec.(size: {w}x{h})",
+    )
+
     time_str = clipper_control.format_time_mmss(timestamp)
     st.write("timestamp:")
     st.code(time_str.replace("-", ":"))
-    download_filename = f"{clipper_control.get_filename()}_{time_str}.png"
 
-    st.download_button(
-        label="📥 Download Screenshot",
-        data=screenshot_bytes,
-        file_name=download_filename,
-        mime="image/png",
-    )
+    col_l, col_r = st.columns([1, 2])
+    with col_l:
+        # ダウンロードボタン
+        download_filename = f"{clipper_control.get_filename()}_{time_str}.png"
 
-    # --- Base64化用に bytes を抽出 ---
-    with st.expander("base64 of image"):
-        img_base64 = base64.b64encode(screenshot_bytes.getvalue()).decode(
-            "utf-8"
+        st.download_button(
+            label="📥 Download Screenshot",
+            data=screenshot_bytes,
+            file_name=download_filename,
+            mime="image/png",
         )
-        st.code(body=f"data:image/png;base64,{img_base64}", height=100)
+
+    with col_r:
+        # --- Base64化用に bytes を抽出 ---
+        with st.expander("base64 of image"):
+            img_base64 = base64.b64encode(screenshot_bytes.getvalue()).decode(
+                "utf-8"
+            )
+            st.code(body=f"data:image/png;base64,{img_base64}", height=100)
 
 
 if __name__ == "__main__":

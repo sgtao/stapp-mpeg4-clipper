@@ -35,20 +35,38 @@ class VideoClipper:
             "size": (self.clip.w, self.clip.h),
         }
 
-    def get_screenshot_bytes(self, sec: float = 1.0):
-        """指定秒数でスクリーンショットを取得しBytesIOで返す"""
+    def get_screenshot_bytes(self, sec: float = 1.0, scale=1.0):
+        """
+        指定秒数のスクリーンショットを取得し、縮小率に応じたBytesIOを返す
+        Args:
+            sec (float): 動画の秒数位置
+            scale (float): 画像縮小率（0〜1）
+        Returns:
+            tuple: (BytesIOオブジェクト, width, height)
+        """
         if sec < 0 or sec > self.clip.duration:
             raise ValueError("指定時間が動画の範囲外です。")
 
+        # フレーム取得
         frame = self.clip.get_frame(sec)
         image = Image.fromarray(frame)
-        # print(f"image size: {image.size}")
-        # width, height = image.size
+
+        # 元サイズ
+        width, height = image.size
+        # 縮小率指定（例: scale=50 → 半分）
+        if 0 < scale <= 1:
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            image = image.resize((new_width, new_height))
+        else:
+            new_width, new_height = width, height
+
+        # BytesIOに変換
         img_bytes = BytesIO()
         image.save(img_bytes, format="PNG")
         img_bytes.seek(0)
         # return img_bytes, ({"width": width, "height": height})
-        return img_bytes
+        return img_bytes, new_width, new_height
 
     def seconds_to_timecode(self, seconds: float) -> str:
         """秒数を mm:ss 形式へ変換"""

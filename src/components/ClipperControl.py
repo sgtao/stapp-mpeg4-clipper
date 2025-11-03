@@ -68,23 +68,27 @@ class ClipperControl:
         """使ったファイル名（拡張子前まで）を返す"""
         return os.path.splitext(os.path.basename(self.filename))[0]
 
-    def get_screenshot_image(self, timestamp=0):
+    def get_screenshot_image(self, timestamp=0, scale=1.0):
         if timestamp == 0:
             timestamp = st.session_state.clip_timestamp
 
         # image_obj, size = self.clipper.get_screenshot_bytes(sec=timestamp)
         # print(f"image size: {size}")
-        image_byte = self.clipper.get_screenshot_bytes(sec=timestamp)
+        image_byte = self.clipper.get_screenshot_bytes(
+            sec=timestamp,
+            scale=scale,
+        )
         return image_byte
 
     def render_single_screenshot(self, timestamp=0):
         # Clip Screenshot
-        img_bytes = self.get_screenshot_image(timestamp)
+        img_bytes, width, height = self.get_screenshot_image(timestamp)
 
         st.image(
             img_bytes,
             caption=f"📸 Screenshot at {timestamp} sec.",
         )
+        return img_bytes
 
     def cleanup(self):
         if self.clipper is not None:

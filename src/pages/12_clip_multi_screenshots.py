@@ -53,7 +53,7 @@ class MultiScreenshot:
             end_time = min(start_time + 60, self.meta["duration"])
 
         for sec in range(int(start_time), int(end_time), step):
-            img_bytes = self.clipper.get_screenshot_bytes(sec)
+            img_bytes, _, _ = self.clipper.get_screenshot_bytes(sec)
             screenshots.append((sec, img_bytes))
 
         return screenshots
