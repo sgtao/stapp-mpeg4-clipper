@@ -24,6 +24,10 @@ def initialize_session_state():
     if "screenshot_list" not in st.session_state:
         st.session_state.screenshot_list = []
 
+    if "csv_loaded" not in st.session_state:
+        st.session_state.csv_loaded = False
+        st.session_state.csv_df = None
+
     if "app_logger" not in st.session_state:
         app_logger = AppLogger(APP_TITLE)
         app_logger.app_start()
@@ -54,14 +58,21 @@ def download_zip(selected_list):
     return zip_buffer
 
 
+def timestamp_to_sec(timestamp):
+    m, s = timestamp.split(":")
+    return int(m) * 60 + int(s)
+
+
 def generate_screen_cache_key(minute):
     return f"screens_{minute}"
+
 
 def has_selected_image(timestamp):
     for item in st.session_state.screenshot_list:
         if item["timestamp"] == timestamp:
             return True
     return False
+
 
 @st.dialog(
     title="Screenshots in specified minute",
@@ -100,7 +111,7 @@ def select_screenshots_dialog(start_minute):
             checked = st.checkbox(
                 label=time_str,
                 key=f"chk_{start_minute}_{timestamp}",
-                value=has_selected_image(time_str)
+                value=has_selected_image(time_str),
             )
             if checked:
                 selected_timestamps.append((time_str, img_bytes))
@@ -153,6 +164,9 @@ def main():
     st.page_link("main.py", label="Back to Home", icon="🏠")
     st.subheader(f"📹 {APP_TITLE}")
 
+    # ------------------------
+    # ① 動画アップロード
+    # ------------------------
     uploaded_file = st.file_uploader(
         "🎞 Upload MP4 file",
         type=["mp4", "mpeg4"],
@@ -171,6 +185,65 @@ def main():
     # meta = multi_shot.get_meta_info()
     # st.json(meta)
 
+    # ------------------------
+    # ② CSVアップロード（スナップショット指定用）
+    # ------------------------
+    st.divider()
+    st.subheader("📄 Load Screenshot List from CSV")
+    st.write(
+        "Upload CSV file with Timestamp, "
+        + "Select images and `Add` from each minute button at bellow."
+    )
+
+    if not st.session_state.csv_loaded:
+        csv_file = st.file_uploader(
+            "📁 Upload CSV file (with Timestamp column)",
+            type=["csv"],
+            key="file_uploader_csv",
+        )
+        if csv_file is not None:
+            df_csv = pd.read_csv(csv_file)
+            st.session_state.csv_df = df_csv
+            st.dataframe(df_csv, width="content")
+
+            if st.button("🪄 Generate from CSV file", type="primary"):
+                if "Timestamp" not in df_csv.columns:
+                    st.error("CSVファイルに 'Timestamp' 列が見つかりません。")
+                else:
+                    st.session_state.screenshot_list = []
+                    for i, row in df_csv.iterrows():
+                        ts_str = str(row["Timestamp"]).strip()
+                        if pd.isna(ts_str) or ts_str == "":
+                            continue
+                        # mm:ss → 秒数に変換
+                        try:
+                            sec = timestamp_to_sec(ts_str)
+                            img_bytes, _, _ = (
+                                multi_shot.clipper.get_screenshot_bytes(sec)
+                            )
+                            item = {
+                                "id": len(st.session_state.screenshot_list)
+                                + 1,
+                                "timestamp": ts_str,
+                                "image": img_bytes,
+                            }
+                            st.session_state.screenshot_list.append(item)
+                        except Exception as e:
+                            st.warning(
+                                f"タイムスタンプ {ts_str} の処理に失敗しました: {e}"
+                            )
+                    st.success(
+                        "✅ CSV内容からスクリーンショットを生成しました！"
+                    )
+                    st.session_state.csv_loaded = True
+    else:
+        st.info(
+            "✅ CSVファイルはすでに適用されています。再アップロードするには状態をクリアしてください。"
+        )
+
+    # ------------------------
+    # ③ minuteごとのボタン
+    # ------------------------
     minute_shots = multi_shot.extract_screenshots(
         start_minute=0,
         period_sec=9999,
@@ -178,7 +251,8 @@ def main():
     )
     if len(minute_shots) > 0:
         st.subheader(f"📷 Screenshots Each Minutes ({len(minute_shots)})")
-
+        # st.write("Select images and `Add` from each minute button," +
+        #         " or upload CSV file at bellow.")
         cols = st.columns(5)
         for i, (timestamp, img_bytes) in enumerate(minute_shots):
             col = cols[i % 5]
@@ -191,6 +265,9 @@ def main():
                     st.session_state.selected_minute = timestamp // 60
                     select_screenshots_dialog(timestamp // 60)
 
+    # ------------------------
+    # ④ スクリーンショットリストの表示
+    # ------------------------
     if len(st.session_state.screenshot_list) > 0:
         st.divider()
         st.subheader("📦 ダウンロード候補リスト")
@@ -205,7 +282,7 @@ def main():
         st.dataframe(data=df_display, width="stretch")
 
         # ---------------------------
-        # ダウンロード機能
+        # ⑤ ダウンロード機能
         # ---------------------------
         col1, col2, col3 = st.columns(3)
         with col1:
