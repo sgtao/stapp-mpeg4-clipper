@@ -57,6 +57,11 @@ def download_zip(selected_list):
 def generate_screen_cache_key(minute):
     return f"screens_{minute}"
 
+def has_selected_image(timestamp):
+    for item in st.session_state.screenshot_list:
+        if item["timestamp"] == timestamp:
+            return True
+    return False
 
 @st.dialog(
     title="Screenshots in specified minute",
@@ -93,7 +98,9 @@ def select_screenshots_dialog(start_minute):
             st.image(img_bytes)
             time_str = multi_shot.seconds_to_timecode(timestamp)
             checked = st.checkbox(
-                label=time_str, key=f"chk_{start_minute}_{timestamp}"
+                label=time_str,
+                key=f"chk_{start_minute}_{timestamp}",
+                value=has_selected_image(time_str)
             )
             if checked:
                 selected_timestamps.append((time_str, img_bytes))
