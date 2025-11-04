@@ -294,7 +294,7 @@ def main():
         # 表示用に必要な列だけ抽出（id と timestamp）
         df = pd.DataFrame(st.session_state.screenshot_list)
         df_display = df[["id", "timestamp"]].rename(
-            columns={"id": "Slide ID", "timestamp": "Timestamp"}
+            columns={"id": "ID", "timestamp": "Timestamp"}
         )
 
         # 表形式で表示
