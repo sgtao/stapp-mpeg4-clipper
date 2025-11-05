@@ -1,5 +1,7 @@
 # ClipperControl.py
+import io
 import os
+import tempfile
 
 import streamlit as st
 
@@ -102,6 +104,33 @@ class ClipperControl:
             temp_audiofile="temp-audio.m4a",
             remove_temp=True,
         )
+
+    def download_clipped_mp4(self, start_sec, end_sec):
+        """選択したスクリーンをMP4にして返す"""
+        try:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".mp4"
+            ) as tmp_file:
+                tmp_path = tmp_file.name
+
+            # 動画を切り出して一時ファイルに出力
+            self.clip_video_range(
+                output_path=tmp_path,
+                start_sec=start_sec,
+                end_sec=end_sec,
+            )
+
+            # 一時ファイルから読み込んでBytesIOに格納
+            with open(tmp_path, "rb") as f:
+                mp4_bytes = f.read()
+
+            # 一時ファイルを削除
+            os.remove(tmp_path)
+
+            # メモリ上に返す
+            return io.BytesIO(mp4_bytes)
+        except Exception as e:
+            raise e
 
     def cleanup(self):
         if self.clipper is not None:

@@ -110,17 +110,27 @@ def main():
         st.info("動画を切り出しています... しばらくお待ちください。")
         try:
             # 一時ファイル作成
+            with st.spinner():
+                clipped_mp4_buffer = clipper_control.download_clipped_mp4(
+                    start_sec=start_sec,
+                    end_sec=end_sec,
+                )
+                st.success("✅ 切り出しが完了しました！")
+
+            # Download
             filename = (
                 f"{clipper_control.get_filename()}_"
                 + f"{int(start_sec)}s_to_{int(end_sec)}s.mp4"
             )
-            clipper_control.clip_video_range(
-                output_path=filename,
-                start_sec=start_sec,
-                end_sec=end_sec,
+            st.download_button(
+                label="📥 Download MP4",
+                data=clipped_mp4_buffer,
+                file_name=filename,
+                mime="application/mpeg",
+                # on_click=log_download_filename,
+                # args=[zip_filename],
             )
 
-            st.success("✅ 切り出しが完了しました！")
         except Exception as e:
             st.error(f"❌ エラーが起きました！ {e}")
 
