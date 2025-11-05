@@ -79,23 +79,6 @@ def main():
     st.divider()
     st.write("🎬 切り出したい動画範囲を指定してください")
 
-    # col1, col2 = st.columns(2)
-    # with col1:
-    #     start_sec = st.number_input(
-    #         "Start time (sec)",
-    #         min_value=0.0,
-    #         max_value=duration,
-    #         value=0.0,
-    #         step=1.0,
-    #     )
-    # with col2:
-    #     end_sec = st.number_input(
-    #         "End time (sec)",
-    #         min_value=0.0,
-    #         max_value=duration,
-    #         value=min(duration, 10.0),
-    #         step=1.0,
-    #     )
     start_sec, end_sec = st.slider(
         "Select clip range (sec)", 0.0, duration, (0.0, duration / 2)
     )
@@ -118,17 +101,17 @@ def main():
                 st.success("✅ 切り出しが完了しました！")
 
             # Download
-            filename = (
+            mp4_filename = (
                 f"{clipper_control.get_filename()}_"
                 + f"{int(start_sec)}s_to_{int(end_sec)}s.mp4"
             )
             st.download_button(
                 label="📥 Download MP4",
                 data=clipped_mp4_buffer,
-                file_name=filename,
+                file_name=mp4_filename,
                 mime="application/mpeg",
-                # on_click=log_download_filename,
-                # args=[zip_filename],
+                on_click=log_download_filename,
+                args=[mp4_filename],
             )
 
         except Exception as e:

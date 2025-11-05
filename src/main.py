@@ -19,5 +19,10 @@ st.page_link(
     label="Go to Multi Screenshot Selector App",
     icon="📹",
 )
+st.page_link(
+    "pages/13_clip_partial_video.py",
+    label="Go to Clip Partial Video Downloader App",
+    icon="✂️",
+)
 # ログ表示ページへのリンク
 st.page_link("pages/21_logs_viewer.py", label="View Logs", icon="📄")
