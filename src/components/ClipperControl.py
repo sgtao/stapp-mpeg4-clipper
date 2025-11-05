@@ -90,6 +90,19 @@ class ClipperControl:
         )
         return img_bytes
 
+    def clip_video_range(self, output_path, start_sec, end_sec):
+        # サブクリップ作成（メモリ上で切り出し）
+        subclip = self.clipper.subclipped(start_sec, end_sec)
+
+        # 書き出し（必要に応じてcodecを指定）
+        subclip.write_videofile(
+            output_path,
+            codec="libx264",
+            audio_codec="aac",
+            temp_audiofile="temp-audio.m4a",
+            remove_temp=True,
+        )
+
     def cleanup(self):
         if self.clipper is not None:
             try:

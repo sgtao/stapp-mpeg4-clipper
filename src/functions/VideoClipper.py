@@ -76,6 +76,14 @@ class VideoClipper:
         s = int(seconds % 60)
         return f"{m:02}:{s:02}"
 
+    def subclipped(self, start_sec, end_sec=None):
+        if end_sec is None:
+            meta = self.get_metadata()
+            _end_sec = meta["duration"]
+        else:
+            _end_sec = end_sec
+        return self.clip.subclipped(int(start_sec), int(_end_sec))
+
     def cleanup(self):
         """リソース解放"""
         if self.clip:
