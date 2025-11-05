@@ -47,6 +47,7 @@ def log_download_filename(filename):
 
 
 def main():
+    app_logger = st.session_state.app_logger
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="🏠 Back to Home")
     st.subheader(f"✂️ {APP_TITLE}")
@@ -67,7 +68,8 @@ def main():
         cleanup_clipper()
         st.session_state.clipper_control = ClipperControl(uploaded_file)
         st.session_state.mpeg_hash = current_hash
-        st.info("✅ 動画を読み込みました。")
+        st.info("✅ Loaded Video data into cache.")
+        app_logger.info_log(f"Load vide data : {uploaded_file.name}")
     else:
         st.info("📁 既存キャッシュを使用中。")
 
