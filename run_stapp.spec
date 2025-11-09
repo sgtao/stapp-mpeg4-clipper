@@ -25,9 +25,13 @@ a = Analysis(
     hiddenimports=[ # 明示的にインポートが必要なモジュールを指定
         "streamlit",
         "streamlit.web.cli",
-        "src.components.spiral_chart",
-        "src.functions.calculations",
+        "src.components.ClipperControl",
+        "src.components.MultiScreenshot",
+        "src.functions.AppLogger",
+        "src.functions.VideoClipper",
         # 以下は、Streamlitの依存パッケージ
+        "moviepy",
+        "pandas",
         "numpy",
         "plotly",
         "pillow",
