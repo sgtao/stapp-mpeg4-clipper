@@ -396,8 +396,16 @@ def main():
         # ---------------------------
         # ダウンロード機能
         # ---------------------------
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
+            if st.button("Reset whole state.", icon="🔃"):
+                st.info("After Reset, upload mpeg.")
+                st.session_state.clear()
+                time.sleep(2)
+                st.rerun()
+        with col2:
+            pass
+        with col3:
             # TimeStamp(CSV) ダウンロード機能
             csv_buffer = io.StringIO()
             df_display.to_csv(csv_buffer, index=False)
@@ -406,18 +414,16 @@ def main():
                 f"Selected_Timestamps_{multi_shot.get_filename()}.csv"
             )
             st.download_button(
-                label="📄 Download Timestamp List (CSV)",
+                label="📄 DL. Timestamp (CSV)",
                 data=csv_data,
                 file_name=csv_filename,
                 mime="text/csv",
                 on_click=log_download_filename,
                 args=[csv_filename],
             )
-        with col2:
-            pass
-        with col3:
+        with col4:
             # Snapshots(ZIP, png) ダウンロード機能
-            if st.button("⬇️ Download Screen Shots (ZIP)", type="primary"):
+            if st.button("DL. Snapthos (ZIP)", type="primary", icon="⬇️"):
                 zip_buffer = download_zip(st.session_state.screenshot_list)
                 zip_filename = f"Screenshots_{multi_shot.get_filename()}.zip"
                 st.download_button(
