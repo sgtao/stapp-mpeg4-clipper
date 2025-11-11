@@ -278,9 +278,15 @@ def main():
     # ------------------------
     # ②-2 CSVアップロード（スナップショット指定用）
     # ------------------------
-    st.subheader("📄 Load Screenshot List from CSV")
 
-    if not st.session_state.csv_loaded:
+    if (
+        not st.session_state.csv_loaded
+        and len(st.session_state.screenshot_list) == 0
+    ):
+        st.subheader("📄 Load Screenshot List from CSV")
+        st.info(
+            "✅ CSVファイルをアップロードして、一括でスナップショットを抽出できます"
+        )
         csv_file = st.file_uploader(
             "📁 Upload CSV file (with Timestamp column)",
             type=["csv"],
@@ -325,10 +331,6 @@ def main():
                         "✅ CSV内容からスクリーンショットを生成しました！"
                     )
                     st.session_state.csv_loaded = True
-    else:
-        st.info(
-            "✅ CSVファイルはすでに適用されています。再アップロードするには状態をクリアしてください。"
-        )
 
     # ------------------------
     # ③ スクリーンショットリストの表示 + DL
