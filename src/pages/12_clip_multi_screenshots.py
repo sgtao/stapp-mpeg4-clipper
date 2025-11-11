@@ -306,7 +306,12 @@ def main():
                         id_cols = ["ID", "Id", "NO", "No"]
                         ts_id = extract_first_valid_value(row, id_cols, int)
                         # ts_str = str(row["Timestamp"]).strip()
-                        ts_cols = ["Timestamp", "TimeStamp", "timestamp", "timeStamp"]
+                        ts_cols = [
+                            "Timestamp",
+                            "TimeStamp",
+                            "timestamp",
+                            "timeStamp",
+                        ]
                         ts_str = extract_first_valid_value(row, ts_cols)
 
                         if ts_id == "" or pd.isna(ts_str) or ts_str == "":
