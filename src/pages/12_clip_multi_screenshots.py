@@ -384,6 +384,15 @@ def main():
         # 表形式で表示
         st.dataframe(data=df_display, width="stretch")
 
+        # 画像一覧
+        screenshots = st.session_state.screenshot_list
+        cols = st.columns(5)
+        for i, item in enumerate(screenshots):
+            col = cols[i % 5]
+            with col:
+                st.image(item["image"])
+                st.write(f"{item['id']}: {item['timestamp']}")
+
         # ---------------------------
         # ダウンロード機能
         # ---------------------------
@@ -408,7 +417,7 @@ def main():
             pass
         with col3:
             # Snapshots(ZIP, png) ダウンロード機能
-            if st.button("⬇️ Download Screen Shots (ZIP)"):
+            if st.button("⬇️ Download Screen Shots (ZIP)", type="primary"):
                 zip_buffer = download_zip(st.session_state.screenshot_list)
                 zip_filename = f"Screenshots_{multi_shot.get_filename()}.zip"
                 st.download_button(
