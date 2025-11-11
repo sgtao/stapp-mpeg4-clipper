@@ -178,6 +178,48 @@ def log_download_filename(filename):
     app_logger.info_log(f"download as {filename}")
 
 
+def extract_first_valid_value(row, candidate_cols, cast_func=str):
+    """
+    候補列の中から最初に有効な値を抽出する。
+
+    Parameters
+    ----------
+    row : pandas.Series
+        CSVの1行
+    candidate_cols : list[str]
+        候補となる列名のリスト
+    cast_func : callable, optional
+        値をキャストする関数（例: str, int, float）
+
+    Returns
+    -------
+    any or ""
+        最初に見つかった有効な値。なければ Blank(`""`)
+    """
+    if cast_func == "int" or "float":
+        return next(
+            (
+                cast_func(row[col])
+                for col in candidate_cols
+                if col in row
+                and pd.notna(row[col])
+                and str(row[col]).strip() != ""
+            ),
+            "",
+        )
+    else:
+        return next(
+            (
+                cast_func(str(row[col]).strip())
+                for col in candidate_cols
+                if col in row
+                and pd.notna(row[col])
+                and str(row[col]).strip() != ""
+            ),
+            "",
+        )
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="Back to Home", icon="🏠")
@@ -255,8 +297,13 @@ def main():
                 else:
                     st.session_state.screenshot_list = []
                     for i, row in df_csv.iterrows():
-                        ts_str = str(row["Timestamp"]).strip()
-                        if pd.isna(ts_str) or ts_str == "":
+                        id_cols = ["ID", "Id", "NO", "No"]
+                        ts_id = extract_first_valid_value(row, id_cols, int)
+                        # ts_str = str(row["Timestamp"]).strip()
+                        ts_cols = ["Timestamp", "TimeStamp", "timestamp"]
+                        ts_str = extract_first_valid_value(row, ts_cols)
+
+                        if ts_id == "" or pd.isna(ts_str) or ts_str == "":
                             continue
                         # mm:ss → 秒数に変換
                         try:
@@ -265,8 +312,7 @@ def main():
                                 multi_shot.clipper.get_screenshot_bytes(sec)
                             )
                             item = {
-                                "id": len(st.session_state.screenshot_list)
-                                + 1,
+                                "id": ts_id,
                                 "timestamp": ts_str,
                                 "image": img_bytes,
                             }
