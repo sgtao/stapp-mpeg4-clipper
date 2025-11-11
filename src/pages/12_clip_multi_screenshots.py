@@ -24,10 +24,6 @@ def initialize_session_state():
     if "screenshot_list" not in st.session_state:
         st.session_state.screenshot_list = []
 
-    if "csv_loaded" not in st.session_state:
-        st.session_state.csv_loaded = False
-        st.session_state.csv_df = None
-
     if "app_logger" not in st.session_state:
         app_logger = AppLogger(APP_TITLE)
         app_logger.app_start()
@@ -178,6 +174,44 @@ def log_download_filename(filename):
     app_logger.info_log(f"download as {filename}")
 
 
+def has_valid_columns(df_columns, candidate_cols):
+    """
+    DataFrameの列の中に、候補列が1つでも含まれているか判定する。
+
+    df_columns : list-like    DataFrameの列名（例: df.columns）
+    candidate_cols : list[str]
+        チェック対象の候補列（例: ["Timestamp", "TimeStamp", "timestamp"]）
+
+    Returns
+    -------
+    bool
+    """
+    return any(col in df_columns for col in candidate_cols)
+
+
+def has_valid_column(df: pd.DataFrame, candidate_cols: list[str]) -> bool:
+    """
+    DataFrame内に候補列名のいずれかが存在するかを判定する。
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        チェック対象のデータフレーム
+    candidate_cols : list[str]
+        存在を確認したい列名の候補リスト
+
+    Returns
+    -------
+    bool
+        一致する列が1つでもあれば True、なければ False
+    """
+    # 念のため全てを文字列化＆小文字に統一
+    df_cols = [str(c).lower() for c in df.columns]
+    normalized_candidates = [c.lower() for c in candidate_cols]
+
+    return any(col in df_cols for col in normalized_candidates)
+
+
 def extract_first_valid_value(row, candidate_cols, cast_func=str):
     """
     候補列の中から最初に有効な値を抽出する。
@@ -279,10 +313,7 @@ def main():
     # ②-2 CSVアップロード（スナップショット指定用）
     # ------------------------
 
-    if (
-        not st.session_state.csv_loaded
-        and len(st.session_state.screenshot_list) == 0
-    ):
+    if len(st.session_state.screenshot_list) == 0:
         st.subheader("📄 Load Screenshot List from CSV")
         st.info(
             "✅ CSVファイルをアップロードして、一括でスナップショットを抽出できます"
@@ -294,11 +325,16 @@ def main():
         )
         if csv_file is not None:
             df_csv = pd.read_csv(csv_file)
-            st.session_state.csv_df = df_csv
             st.dataframe(df_csv, width="content")
+            ts_cols = [
+                "Timestamp",
+                "TimeStamp",
+                "timestamp",
+                "timeStamp",
+            ]
 
             if st.button("🪄 Generate from CSV file", type="primary"):
-                if "Timestamp" not in df_csv.columns:
+                if has_valid_columns(df_csv.columns, ts_cols) is False:
                     st.error("CSVファイルに 'Timestamp' 列が見つかりません。")
                 else:
                     st.session_state.screenshot_list = []
@@ -306,12 +342,6 @@ def main():
                         id_cols = ["ID", "Id", "NO", "No"]
                         ts_id = extract_first_valid_value(row, id_cols, int)
                         # ts_str = str(row["Timestamp"]).strip()
-                        ts_cols = [
-                            "Timestamp",
-                            "TimeStamp",
-                            "timestamp",
-                            "timeStamp",
-                        ]
                         ts_str = extract_first_valid_value(row, ts_cols)
 
                         if ts_id == "" or pd.isna(ts_str) or ts_str == "":
@@ -335,7 +365,8 @@ def main():
                     st.success(
                         "✅ CSV内容からスクリーンショットを生成しました！"
                     )
-                    st.session_state.csv_loaded = True
+                    time.sleep(2)
+                    st.rerun()
 
     # ------------------------
     # ③ スクリーンショットリストの表示 + DL
