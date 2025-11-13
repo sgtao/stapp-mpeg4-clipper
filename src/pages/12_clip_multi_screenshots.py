@@ -258,7 +258,6 @@ def main():
     st.set_page_config(page_title=APP_TITLE)
     st.page_link("main.py", label="Back to Home", icon="🏠")
     st.subheader(f"📹 {APP_TITLE}")
-
     # ------------------------
     # ① 動画アップロード
     # ------------------------
@@ -270,6 +269,14 @@ def main():
     )
     if not uploaded_file:
         st.info("動画ファイルをアップロードしてください。")
+        """
+        This App captures multiple screenshots from a video every 60 seconds.
+        ### Usage:
+        - Step-1. Upload an MP4 video file.
+        - Step-2. Browse each minute’s screenshots and select desired frames.
+          * Step-2'. (Optional) Select screenshots from a CSV with timestamps.
+        - Step-3. Review selected screenshots and download them as ZIP or CSV.
+        """
         return
 
     if st.session_state.multi_shot is None:
@@ -291,7 +298,7 @@ def main():
             step=60,
         )
     if len(minute_shots) > 0:
-        st.subheader(f"📷 Screenshots Each Minutes ({len(minute_shots)})")
+        st.subheader(f"📷 Screenshots Each Minutes({len(minute_shots)} min.)")
         st.write(
             "Select images and `Add` from each minute button,"
             + " or upload CSV file with Timestamp at bellow."
@@ -314,7 +321,7 @@ def main():
     # ------------------------
 
     if len(st.session_state.screenshot_list) == 0:
-        st.subheader("📄 Load Screenshot List from CSV")
+        st.subheader("📄 (Optional) Load Screenshot List from CSV")
         st.info(
             "✅ CSVファイルをアップロードして、一括でスナップショットを抽出できます"
         )
