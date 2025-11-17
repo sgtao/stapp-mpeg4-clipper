@@ -49,7 +49,10 @@ def download_zip(selected_list):
     with zipfile.ZipFile(zip_buffer, "w") as zipf:
         for idx, item in enumerate(selected_list, start=1):
             # zipf.writestr(f"Slide_{idx:03d}.png", item["image"].getvalue())
-            zipf.writestr(f"Slide_{idx}.png", item["image"].getvalue())
+            zipf.writestr(
+                f"Slide_{item["id"]}.png",
+                item["image"].getvalue(),
+            )
     zip_buffer.seek(0)
     return zip_buffer
 
@@ -310,6 +313,7 @@ def main():
                 "TimeStamp",
                 "timestamp",
                 "timeStamp",
+                "Time stamp",
             ]
 
             if st.button("🪄 Generate from CSV file", type="primary"):
@@ -318,7 +322,7 @@ def main():
                 else:
                     st.session_state.screenshot_list = []
                     for i, row in df_csv.iterrows():
-                        id_cols = ["ID", "Id", "NO", "No"]
+                        id_cols = ["ID", "Id", "NO", "No", "No."]
                         ts_id = extract_first_valid_value(row, id_cols, int)
                         # ts_str = str(row["Timestamp"]).strip()
                         ts_str = extract_first_valid_value(row, ts_cols)
