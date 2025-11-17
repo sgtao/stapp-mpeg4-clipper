@@ -1,7 +1,7 @@
 # MultiScreenshot.py
 import streamlit as st
 
-from src.functions.VideoClipper import VideoClipper  # ✅ 追加
+from functions.VideoClipper import VideoClipper  # ✅ 追加
 from functions.AppLogger import AppLogger
 
 APP_TITLE = "Multi Screenshot Component"

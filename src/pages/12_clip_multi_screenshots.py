@@ -273,8 +273,8 @@ def main():
         This App captures multiple screenshots from a video every 60 seconds.
         ### Usage:
         - Step-1. Upload an MP4 video file.
-        - Step-2. Browse each minute’s screenshots and select desired frames.
-          * Step-2'. (Optional) Select screenshots from a CSV with timestamps.
+        * Step-2. Select screenshots from a CSV with timestamps.
+          - Step-2'. From each minute’s screenshots, select desired frames.
         - Step-3. Review selected screenshots and download them as ZIP or CSV.
         """
         return
@@ -289,35 +289,7 @@ def main():
 
     st.divider()
     # ------------------------
-    # ②-1 minuteごとのボタン
-    # ------------------------
-    with st.spinner():
-        minute_shots = multi_shot.extract_screenshots(
-            start_minute=0,
-            period_sec=9999,
-            step=60,
-        )
-    if len(minute_shots) > 0:
-        st.subheader(f"📷 Screenshots Each Minutes({len(minute_shots)} min.)")
-        st.write(
-            "Select images and `Add` from each minute button,"
-            + " or upload CSV file with Timestamp at bellow."
-        )
-
-        cols = st.columns(5)
-        for i, (timestamp, img_bytes) in enumerate(minute_shots):
-            col = cols[i % 5]
-            with col:
-                time_str = multi_shot.seconds_to_timecode(timestamp)
-                st.image(
-                    img_bytes,
-                )
-                if st.button(time_str):
-                    st.session_state.selected_minute = timestamp // 60
-                    select_screenshots_dialog(timestamp // 60)
-
-    # ------------------------
-    # ②-2 CSVアップロード（スナップショット指定用）
+    # ②-1 CSVアップロード（スナップショット指定用）
     # ------------------------
 
     if len(st.session_state.screenshot_list) == 0:
@@ -374,6 +346,37 @@ def main():
                     )
                     time.sleep(2)
                     st.rerun()
+
+    # ------------------------
+    # ②-2 minuteごとのボタン
+    # ------------------------
+    with st.expander("minuteごとのボタン"):
+        with st.spinner():
+            minute_shots = multi_shot.extract_screenshots(
+                start_minute=0,
+                period_sec=9999,
+                step=60,
+            )
+        if len(minute_shots) > 0:
+            st.subheader(
+                f"📷 Screenshots Each Minutes({len(minute_shots)} min.)"
+            )
+            st.write(
+                "Select images and `Add` from each minute button,"
+                + " or upload CSV file with Timestamp at bellow."
+            )
+
+            cols = st.columns(5)
+            for i, (timestamp, img_bytes) in enumerate(minute_shots):
+                col = cols[i % 5]
+                with col:
+                    time_str = multi_shot.seconds_to_timecode(timestamp)
+                    st.image(
+                        img_bytes,
+                    )
+                    if st.button(time_str):
+                        st.session_state.selected_minute = timestamp // 60
+                        select_screenshots_dialog(timestamp // 60)
 
     # ------------------------
     # ③ スクリーンショットリストの表示 + DL
